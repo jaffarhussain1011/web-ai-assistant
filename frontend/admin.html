@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knowledge Base — Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #f8fafc; color: #1e293b; }
+
+    header { background: #1e293b; color: #fff; padding: 16px 28px;
+             display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header .badge { background: #ef4444; color: #fff; font-size: 11px;
+                    padding: 2px 8px; border-radius: 12px; }
+
+    nav { background: #fff; border-bottom: 1px solid #e2e8f0;
+          display: flex; gap: 0; }
+    nav button {
+      padding: 12px 20px; font-size: 14px; border: none; background: none;
+      cursor: pointer; color: #64748b; border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    nav button.active { color: #4F46E5; border-bottom-color: #4F46E5; font-weight: 600; }
+    nav button:hover:not(.active) { color: #1e293b; }
+
+    .tab { display: none; padding: 24px 28px; max-width: 900px; }
+    .tab.active { display: block; }
+
+    .card { background: #fff; border-radius: 10px; padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: #4F46E5; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; }
+    .stat { background: #f8fafc; border-radius: 8px; padding: 16px; text-align: center; }
+    .stat .val { font-size: 28px; font-weight: 700; color: #4F46E5; }
+    .stat .lbl { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+    .chunk-list { display: flex; flex-direction: column; gap: 8px; }
+    .chunk {
+      background: #f8fafc; border-radius: 8px; padding: 12px 14px;
+      font-size: 13px; line-height: 1.5; color: #374151;
+      border-left: 3px solid #4F46E5; cursor: pointer;
+    }
+    .chunk:hover { background: #eef2ff; }
+    .chunk .ci { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+
+    .ask-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .ask-row input {
+      flex: 1; border: 1px solid #d1d5db; border-radius: 8px;
+      padding: 10px 14px; font-size: 14px; outline: none;
+    }
+    .ask-row input:focus { border-color: #4F46E5; }
+    .ask-row button {
+      background: #4F46E5; color: #fff; border: none; border-radius: 8px;
+      padding: 10px 20px; font-size: 14px; cursor: pointer;
+    }
+    .ask-row button:disabled { opacity: 0.5; cursor: default; }
+
+    #test-result {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+      padding: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap;
+      display: none;
+    }
+    #test-result.error { background: #fef2f2; border-color: #fecaca; }
+
+    .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer;
+           font-size: 13px; font-weight: 600; }
+    .btn-primary   { background: #4F46E5; color: #fff; }
+    .btn-danger    { background: #ef4444; color: #fff; }
+    .btn-secondary { background: #f1f5f9; color: #374151; border: 1px solid #e2e8f0; }
+    .btn:hover { filter: brightness(1.05); }
+
+    label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px; }
+    input[type=text], input[type=number], input[type=password], select {
+      width: 100%; border: 1px solid #d1d5db; border-radius: 7px;
+      padding: 8px 12px; font-size: 14px; margin-bottom: 12px; outline: none;
+    }
+    input:focus, select:focus { border-color: #4F46E5; }
+
+    #status-dot { width: 10px; height: 10px; border-radius: 50%;
+                  display: inline-block; margin-right: 6px; background: #d1d5db; }
+    #status-dot.ok  { background: #22c55e; }
+    #status-dot.err { background: #ef4444; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 8px 12px; background: #f8fafc; text-align: left;
+         border-bottom: 2px solid #e2e8f0; font-weight: 600; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+
+    .pagination { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+    .pagination button { padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0;
+                         background: #fff; cursor: pointer; font-size: 13px; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination span { font-size: 13px; color: #64748b; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" stroke-linecap="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+    <path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12"/>
+    <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+  </svg>
+  <h1>Knowledge Base Admin</h1>
+  <span class="badge">Admin</span>
+  <span style="margin-left:auto; font-size:13px; opacity:0.7">
+    <span id="status-dot"></span><span id="status-text">Checking …</span>
+  </span>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('overview')">Overview</button>
+  <button onclick="showTab('chunks')">Chunks</button>
+  <button onclick="showTab('test')">Test Q&amp;A</button>
+  <button onclick="showTab('settings')">Settings</button>
+</nav>
+
+<!-- ── Overview ─────────────────────────────────────────────────────────── -->
+<div id="tab-overview" class="tab active">
+  <div class="card">
+    <h2>System Status</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="val" id="stat-chunks">—</div><div class="lbl">Chunks indexed</div></div>
+      <div class="stat"><div class="val" id="stat-loaded">—</div><div class="lbl">Index loaded</div></div>
+      <div class="stat"><div class="val" id="stat-model">—</div><div class="lbl">Embed model</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Quick Actions</h2>
+    <div style="display:flex; gap:10px; flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="refreshStatus()">Refresh Status</button>
+      <button class="btn btn-secondary" onclick="window.open('/docs','_blank')">API Docs (Swagger)</button>
+      <button class="btn btn-secondary" onclick="showTab('test')">Test a Question</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Chunks ────────────────────────────────────────────────────────────── -->
+<div id="tab-chunks" class="tab">
+  <div class="card">
+    <h2>Knowledge Chunks <span id="chunks-total" style="font-weight:400; font-size:13px; color:#9ca3af"></span></h2>
+    <div class="chunk-list" id="chunk-list">Loading …</div>
+    <div class="pagination">
+      <button id="prev-btn" onclick="changePage(-1)" disabled>← Prev</button>
+      <span id="page-info"></span>
+      <button id="next-btn" onclick="changePage(+1)">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Test Q&A ──────────────────────────────────────────────────────────── -->
+<div id="tab-test" class="tab">
+  <div class="card">
+    <h2>Test the Q&amp;A Pipeline</h2>
+    <div class="ask-row">
+      <input id="test-q" type="text" placeholder="How many products are there?" />
+      <button id="test-btn" onclick="testAsk()">Ask</button>
+    </div>
+    <div id="test-result"></div>
+  </div>
+  <div class="card">
+    <h2>Sample Questions</h2>
+    <div style="display:flex; flex-wrap:wrap; gap:8px">
+      <button class="btn btn-secondary" onclick="setQ(this)">What tables are in the database?</button>
+      <button class="btn btn-secondary" onclick="setQ(this)">How many users are there?</button>
+      <button class="btn btn-secondary" onclick="setQ(this)">What columns does the products table have?</button>
+      <button class="btn btn-secondary" onclick="setQ(this)">How are orders related to users?</button>
+      <button class="btn btn-secondary" onclick="setQ(this)">What is the most expensive product?</button>
+      <button class="btn btn-secondary" onclick="setQ(this)">Show me sample data from the reviews table</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings ──────────────────────────────────────────────────────────── -->
+<div id="tab-settings" class="tab">
+  <div class="card">
+    <h2>API Connection</h2>
+    <label>Backend URL</label>
+    <input type="text" id="api-url-input" value="http://localhost:8000" />
+    <button class="btn btn-primary" onclick="saveSettings()">Save &amp; Test</button>
+  </div>
+  <div class="card">
+    <h2>About</h2>
+    <table>
+      <tr><th>Component</th><th>Details</th></tr>
+      <tr><td>Embeddings</td><td>sentence-transformers (all-MiniLM-L6-v2)</td></tr>
+      <tr><td>Vector DB</td><td>FAISS (flat inner-product, cosine similarity)</td></tr>
+      <tr><td>LLM</td><td>Local Ollama (llama3.2 / mistral / phi3)</td></tr>
+      <tr><td>API</td><td>FastAPI + Uvicorn</td></tr>
+      <tr><td>Privacy</td><td>All data stays on your machine — zero cloud calls</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+  let API_URL = localStorage.getItem("cw_api_url") || "http://localhost:8000";
+  let _chunkPage = 0, _chunkTotal = 0;
+  const CHUNK_PAGE_SIZE = 15;
+
+  function showTab(name) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+    document.getElementById("tab-" + name).classList.add("active");
+    event.target.classList.add("active");
+    if (name === "chunks") loadChunks();
+  }
+
+  async function refreshStatus() {
+    const dot  = document.getElementById("status-dot");
+    const text = document.getElementById("status-text");
+    try {
+      const r = await fetch(API_URL + "/health");
+      if (!r.ok) throw new Error(r.statusText);
+      const d = await r.json();
+      dot.className = "ok";
+      text.textContent = "Connected";
+      document.getElementById("stat-chunks").textContent = d.chunks_count ?? "—";
+      document.getElementById("stat-loaded").textContent = d.index_loaded ? "Yes" : "No";
+      document.getElementById("stat-model").textContent  = "MiniLM-L6";
+    } catch (e) {
+      dot.className = "err";
+      text.textContent = "Offline";
+    }
+  }
+
+  async function loadChunks() {
+    const list = document.getElementById("chunk-list");
+    list.textContent = "Loading …";
+    try {
+      const r = await fetch(`${API_URL}/chunks?limit=${CHUNK_PAGE_SIZE}&offset=${_chunkPage * CHUNK_PAGE_SIZE}`);
+      const d = await r.json();
+      _chunkTotal = d.total;
+      document.getElementById("chunks-total").textContent = `(${d.total} total)`;
+      document.getElementById("page-info").textContent =
+        `Page ${_chunkPage + 1} of ${Math.ceil(d.total / CHUNK_PAGE_SIZE)}`;
+      document.getElementById("prev-btn").disabled = _chunkPage === 0;
+      document.getElementById("next-btn").disabled =
+        (_chunkPage + 1) * CHUNK_PAGE_SIZE >= d.total;
+
+      list.innerHTML = "";
+      d.chunks.forEach((c, i) => {
+        const el = document.createElement("div");
+        el.className = "chunk";
+        el.innerHTML = `<div class="ci">Chunk #${_chunkPage * CHUNK_PAGE_SIZE + i + 1}</div>${escapeHtml(c)}`;
+        list.appendChild(el);
+      });
+    } catch (e) {
+      list.textContent = "Error: " + e.message;
+    }
+  }
+
+  function changePage(delta) {
+    _chunkPage = Math.max(0, _chunkPage + delta);
+    loadChunks();
+  }
+
+  async function testAsk() {
+    const q   = document.getElementById("test-q").value.trim();
+    const res = document.getElementById("test-result");
+    const btn = document.getElementById("test-btn");
+    if (!q) return;
+    btn.disabled = true;
+    res.style.display = "none";
+    res.className = "";
+    try {
+      const r = await fetch(API_URL + "/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        res.className = "error";
+        res.textContent = "Error " + r.status + ": " + (d.detail || JSON.stringify(d));
+      } else {
+        res.textContent = d.answer + "\n\n[Sources: " + d.sources_count + " chunks · " + d.latency_ms + " ms]";
+      }
+    } catch (e) {
+      res.className = "error";
+      res.textContent = "Network error: " + e.message;
+    } finally {
+      res.style.display = "block";
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById("test-q").addEventListener("keydown", e => {
+    if (e.key === "Enter") testAsk();
+  });
+
+  function setQ(btn) {
+    document.getElementById("test-q").value = btn.textContent;
+    showTab("test");
+  }
+
+  function saveSettings() {
+    API_URL = document.getElementById("api-url-input").value.replace(/\/$/, "");
+    localStorage.setItem("cw_api_url", API_URL);
+    refreshStatus();
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // Init
+  document.getElementById("api-url-input").value = API_URL;
+  refreshStatus();
+</script>
+</body>
+</html>

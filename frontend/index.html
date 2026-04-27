@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Local AI Knowledge Base — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #4F46E5;
+      color: #fff;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    header svg { flex-shrink: 0; }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header p  { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+    main {
+      max-width: 860px;
+      margin: 32px auto;
+      padding: 0 16px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #4F46E5; }
+
+    .step {
+      display: flex;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #EEF2FF; color: #4F46E5;
+      font-weight: 700; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 4px; }
+    pre {
+      background: #1e293b;
+      color: #a5f3fc;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      overflow-x: auto;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-green  { background: #dcfce7; color: #166534; }
+    .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+    .badge-purple { background: #ede9fe; color: #6d28d9; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+
+    .hint {
+      font-size: 13px;
+      color: #64748b;
+      background: #f8fafc;
+      border-left: 3px solid #4F46E5;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 12px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+    <path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12"/>
+    <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+  </svg>
+  <div>
+    <h1>Local AI Knowledge Base</h1>
+    <p>Ask natural-language questions about your MySQL database — fully offline, zero cloud</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- Quick Start -->
+  <div class="card">
+    <h2>Quick Start</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Install dependencies</strong>
+        <pre>pip install -r requirements.txt</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Pull an Ollama model <span class="badge badge-blue">one-time</span></strong>
+        <pre>ollama pull llama3.2</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Train from your database <span class="badge badge-purple">one-time</span></strong>
+        <pre>python train.py --db_host=localhost --db_user=root --db_pass=1234 --db_name=mydb</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Start the API server</strong>
+        <pre>python app.py</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>Open this page or embed the widget anywhere</strong>
+        <pre>&lt;script src="chat-widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  ChatWidget.init({ apiUrl: "http://localhost:8001/ask" });
+&lt;/script&gt;</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Reference -->
+  <div class="card">
+    <h2>API Reference</h2>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/ask</code></td>
+          <td>Ask a question. Body: <code>{"question": "...", "top_k": 5}</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">GET</span></td>
+          <td><code>/health</code></td>
+          <td>Check if the vector store is loaded and the server is ready</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">GET</span></td>
+          <td><code>/chunks</code></td>
+          <td>Browse raw knowledge chunks (debug). Params: <code>limit</code>, <code>offset</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">GET</span></td>
+          <td><code>/docs</code></td>
+          <td>Interactive Swagger UI</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Widget Config -->
+  <div class="card">
+    <h2>Widget Configuration</h2>
+    <table>
+      <thead>
+        <tr><th>Option</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>apiUrl</code></td><td><code>http://localhost:8001/ask</code></td><td>FastAPI backend URL</td></tr>
+        <tr><td><code>title</code></td><td><code>AI Assistant</code></td><td>Chat popup header text</td></tr>
+        <tr><td><code>placeholder</code></td><td><em>Ask a question…</em></td><td>Input placeholder</td></tr>
+        <tr><td><code>primaryColor</code></td><td><code>#4F46E5</code></td><td>Accent / brand colour (any CSS colour)</td></tr>
+        <tr><td><code>position</code></td><td><code>bottom-right</code></td><td><code>bottom-right</code> or <code>bottom-left</code></td></tr>
+        <tr><td><code>top_k</code></td><td><code>5</code></td><td>Number of context chunks to retrieve per query</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hint">
+      💡 The widget is self-contained — no build step, no dependencies. Just drop the
+      <code>&lt;script&gt;</code> tag onto any page and call <code>ChatWidget.init()</code>.
+    </div>
+  </div>
+
+</main>
+
+<footer>Local AI Knowledge Base · All data stays on your machine</footer>
+
+<!-- ── Live widget demo ───────────────────────────────────────────────────── -->
+<script src="chat-widget.js"></script>
+<script>
+  ChatWidget.init({
+    apiUrl:       "http://localhost:8001/ask",
+    title:        "DB Assistant",
+    primaryColor: "#4F46E5",
+    position:     "bottom-right",
+  });
+</script>
+
+</body>
+</html>
