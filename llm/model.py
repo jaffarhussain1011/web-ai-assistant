@@ -50,11 +50,18 @@ MAX_CONTEXT_CHARS = 6000   # increased to fit more row-level docs
 
 @dataclass
 class LLMConfig:
-    model:       str   = DEFAULT_MODEL
-    temperature: float = 0.1     # low temp → factual, deterministic answers
-    num_predict: int   = 512     # max tokens to generate
-    top_p:       float = 0.9
-    ollama_url:  str   = OLLAMA_BASE
+    model:        str   = DEFAULT_MODEL
+    temperature:  float = 0.1     # low temp → factual, deterministic answers
+    num_predict:  int   = 512     # max tokens to generate
+    top_p:        float = 0.9
+    ollama_url:   str   = OLLAMA_BASE
+    # Timeout for a single Ollama generate call (seconds).
+    # First call after a cold start can be slow — 300s is safe for llama3.2.
+    # Increase further if using a large model (7B+) on CPU.
+    request_timeout: int = int(os.getenv("OLLAMA_TIMEOUT", 300))
+    # keep_alive tells Ollama how long to keep the model in RAM after a call.
+    # "10m" prevents eviction when another model is also loaded.
+    keep_alive:   str   = os.getenv("OLLAMA_KEEP_ALIVE", "10m")
 
 
 class LocalLLM:
@@ -124,10 +131,11 @@ class LocalLLM:
         prompt = self._build_prompt(question, context_chunks)
 
         payload = {
-            "model":  self.config.model,
-            "system": SYSTEM_PROMPT,
-            "prompt": prompt,
-            "stream": False,
+            "model":      self.config.model,
+            "system":     SYSTEM_PROMPT,
+            "prompt":     prompt,
+            "stream":     False,
+            "keep_alive": self.config.keep_alive,
             "options": {
                 "temperature": self.config.temperature,
                 "num_predict": self.config.num_predict,
@@ -139,11 +147,16 @@ class LocalLLM:
             resp = requests.post(
                 f"{self.config.ollama_url}/api/generate",
                 json=payload,
-                timeout=120,   # local LLMs can be slow on first run
+                timeout=self.config.request_timeout,
             )
             resp.raise_for_status()
         except requests.Timeout:
-            raise RuntimeError("Ollama request timed out. The model may be loading.")
+            raise RuntimeError(
+                f"Ollama request timed out after {self.config.request_timeout}s. "
+                "The model may still be loading into RAM. "
+                f"Try increasing OLLAMA_TIMEOUT (current: {self.config.request_timeout}s) "
+                "or wait a moment and retry."
+            )
         except requests.RequestException as exc:
             raise RuntimeError(f"Ollama request failed: {exc}") from exc
 
@@ -172,7 +185,7 @@ class LocalLLM:
             f"{self.config.ollama_url}/api/generate",
             json=payload,
             stream=True,
-            timeout=120,
+            timeout=self.config.request_timeout,
         ) as resp:
             resp.raise_for_status()
             for line in resp.iter_lines():

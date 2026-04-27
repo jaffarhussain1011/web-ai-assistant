@@ -200,10 +200,11 @@ class SQLAgent:
     def _call_ollama(self, system: str, user_prompt: str) -> str:
         """Send a prompt to Ollama and return the response text."""
         payload = {
-            "model":  self.config.model,
-            "system": system,
-            "prompt": user_prompt,
-            "stream": False,
+            "model":      self.config.model,
+            "system":     system,
+            "prompt":     user_prompt,
+            "stream":     False,
+            "keep_alive": self.config.keep_alive,   # keep model warm in RAM
             "options": {
                 "temperature": self.config.temperature,
                 "num_predict": self.config.num_predict,
@@ -213,12 +214,16 @@ class SQLAgent:
             resp = requests.post(
                 f"{self.config.ollama_url}/api/generate",
                 json=payload,
-                timeout=120,
+                timeout=self.config.request_timeout,
             )
             resp.raise_for_status()
             return resp.json().get("response", "").strip()
         except requests.Timeout:
-            raise RuntimeError("Ollama request timed out.")
+            raise RuntimeError(
+                f"Ollama request timed out after {self.config.request_timeout}s. "
+                "The model may still be loading. Retry in a moment, or set "
+                "OLLAMA_TIMEOUT=600 for large/slow models."
+            )
         except requests.RequestException as exc:
             raise RuntimeError(f"Ollama error: {exc}") from exc
 
