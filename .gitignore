@@ -1,0 +1,42 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Secrets / credentials ─────────────────────────────────────────────────────
+.env
+# .env.example is intentionally tracked (no real secrets inside)
+
+# ── Generated training data (large, machine-specific) ─────────────────────────
+# Keep the sample SQL seed file, ignore everything generated at runtime
+data/raw/
+data/processed/
+data/vectors/
+data/cache/
+
+# ── Editor / OS junk ──────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# ── Claude Code internal files ────────────────────────────────────────────────
+.claude/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.log
+*.egg-info/
+dist/
+build/
