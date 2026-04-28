@@ -47,6 +47,9 @@ Rules:
 - Prefer simple queries. Use JOINs only when needed.
 - Limit results to 100 rows unless the question asks for a specific count or all rows.
 - Use backtick-quoted identifiers: `table_name`.`column_name`
+- When columns show [values: 'X', 'Y', ...], use those exact values to build your WHERE clause.
+- For user-supplied names or terms, use case-insensitive matching: LOWER(`col`) LIKE LOWER('%term%')
+- Prefer broad searches first — do NOT add extra JOIN conditions that might exclude valid results.
 """
 
 _SQL_USER_TMPL = """\
@@ -59,19 +62,16 @@ SQL:"""
 
 
 _ANSWER_SYSTEM = """\
-You are a helpful data analyst assistant.
-You will be given:
-  1. A user question
-  2. The SQL query that was executed
-  3. The query result
-
-Your job is to answer the question in clear, natural language based on the result.
+You are a friendly, helpful support assistant for an application.
+Answer the user's question naturally based on the data provided.
 
 Rules:
-- Be concise and direct.
-- If the result is empty, say so clearly.
-- If the result has many rows, summarise the key findings.
-- Do not repeat the SQL back to the user unless they asked for it.
+- Give a clear, direct answer in plain conversational English.
+- NEVER mention "SQL", "query", "database", "table", "rows", or "records" — just answer naturally.
+- If the result confirms something exists, say so positively: "Yes, there is a SuperAdmin team."
+- If the result is empty, say "There doesn't appear to be any X" — do not say "the query returned 0 rows".
+- If there are multiple items, list them in a readable way.
+- Be concise — one to three sentences is ideal.
 - Do not invent data — only use what is in the result.
 """
 
@@ -87,9 +87,10 @@ Result ({row_count} row(s)):
 Answer:"""
 
 _SCHEMA_ONLY_SYSTEM = """\
-You are a helpful database assistant.
-Answer the user's question using ONLY the database schema provided.
-If you cannot answer from the schema, say so clearly.
+You are a friendly, helpful support assistant for an application.
+Answer the user's question using the available information provided.
+- Speak naturally — do NOT mention "schema", "database", "table", or "columns".
+- If you cannot answer with confidence, say so clearly and offer what you do know.
 """
 
 _SCHEMA_ONLY_USER_TMPL = """\
@@ -99,6 +100,22 @@ Schema:
 Question: {question}
 
 Answer:"""
+
+_RETRY_SQL_USER_TMPL = """\
+Schema:
+{schema}
+
+Question: {question}
+
+The previous SQL returned no results:
+  {prev_sql}
+
+That was probably too specific. Write a BROADER query:
+- Use LIKE with partial matching instead of exact equals
+- Remove extra JOIN filters that might exclude results
+- Search in more columns if relevant
+
+SQL:"""
 
 
 # ── SQL extraction ────────────────────────────────────────────────────────────
@@ -288,6 +305,27 @@ class SQLAgent:
                     logger.info("[STEP 2] Result preview (first 3 rows): %s", preview[:300])
                 else:
                     logger.info("[STEP 2] Result: (empty — no rows matched)")
+                    # ── Retry with broader SQL when first attempt returns nothing ──
+                    logger.info("[STEP 2] Retrying with broader SQL ...")
+                    retry_prompt = _RETRY_SQL_USER_TMPL.format(
+                        schema=schema, question=question, prev_sql=sql
+                    )
+                    raw_retry = self._call_ollama(_SQL_SYSTEM, retry_prompt)
+                    retry_sql = _extract_sql(raw_retry)
+                    logger.info("[STEP 2] Retry SQL: %s", retry_sql)
+                    if retry_sql and retry_sql != sql:
+                        try:
+                            retry_result = self.executor.execute(retry_sql)
+                            if retry_result.row_count > 0:
+                                logger.info(
+                                    "[STEP 2] Retry succeeded: %d row(s)", retry_result.row_count
+                                )
+                                result = retry_result
+                                sql    = retry_sql
+                            else:
+                                logger.info("[STEP 2] Retry also returned 0 rows.")
+                        except (ValueError, RuntimeError) as retry_exc:
+                            logger.warning("[STEP 2] Retry SQL failed: %s", retry_exc)
 
                 result_text = _result_to_text(result)
 

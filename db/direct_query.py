@@ -144,6 +144,31 @@ class DirectQueryExecutor:
             cur4.execute(f"SELECT COUNT(*) FROM `{tname}`")
             row_count = cur4.fetchone()[0]
 
+            # For small tables, sample distinct values from name/type/status columns
+            # so the LLM can see what values actually exist (prevents wrong WHERE guesses)
+            sample_vals: dict[str, list[str]] = {}
+            if row_count <= 150:
+                _key_kws = ("name", "type", "status", "role", "title",
+                            "category", "code", "slug", "kind", "label")
+                for col in cols:
+                    field      = col["Field"]
+                    col_type   = col["Type"].lower()
+                    field_lower = field.lower()
+                    is_key_col = any(kw in field_lower for kw in _key_kws)
+                    is_text    = any(col_type.startswith(t)
+                                     for t in ("varchar", "enum", "text", "char"))
+                    if is_key_col and is_text:
+                        try:
+                            cur5 = self._conn.cursor()
+                            cur5.execute(
+                                f"SELECT DISTINCT `{field}` FROM `{tname}` LIMIT 10"
+                            )
+                            vals = [str(r[0]) for r in cur5.fetchall() if r[0] is not None]
+                            if vals:
+                                sample_vals[field] = vals
+                        except Exception:
+                            pass
+
             col_parts = []
             for col in cols:
                 tag = ""
@@ -153,7 +178,11 @@ class DirectQueryExecutor:
                     tag = " UNIQUE"
                 if col["Field"] in fk_map:
                     tag += f" {fk_map[col['Field']]}"
-                col_parts.append(f"{col['Field']} {col['Type']}{tag}")
+                col_def = f"{col['Field']} {col['Type']}{tag}"
+                if col["Field"] in sample_vals:
+                    vals_str = ", ".join(f"'{v}'" for v in sample_vals[col["Field"]])
+                    col_def += f" [values: {vals_str}]"
+                col_parts.append(col_def)
 
             lines.append(
                 f"  TABLE {tname} ({row_count} rows): "
