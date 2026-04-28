@@ -75,7 +75,7 @@ Open `frontend/index.html` in a browser, or embed the widget anywhere:
 <script>
   ChatWidget.init({
     apiUrl:       "http://localhost:8000/ask",
-    title:        "DB Assistant",
+    title:        "AI Assistant",
     primaryColor: "#4F46E5",
   });
 </script>

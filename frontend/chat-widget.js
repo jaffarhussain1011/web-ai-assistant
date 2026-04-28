@@ -17,9 +17,9 @@
 
   /* ── Default configuration ─────────────────────────────────────────────── */
   const DEFAULTS = {
-    apiUrl:       "http://localhost:8001/ask",
+    apiUrl:       "http://localhost:8000/ask",
     title:        "AI Assistant",
-    placeholder:  "Ask a question about the database…",
+    placeholder:  "Ask a question …",
     primaryColor: "#4F46E5",      // Indigo
     position:     "bottom-right", // bottom-right | bottom-left
     top_k:        5,              // context chunks to retrieve
@@ -217,7 +217,7 @@
       this._injectCSS();
       this._buildDOM();
       this._bindEvents();
-      this._addBotMessage("👋 Hello! Ask me anything about the database.");
+      this._addBotMessage("👋 Hello! Ask me anything.");
     },
 
     /* ── DOM construction ─────────────────────────────────────────────── */

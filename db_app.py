@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--db_pass", default=os.getenv("DB_PASS", ""))
     p.add_argument("--db_name", default=os.getenv("DB_NAME", ""))
     p.add_argument("--host",    default=os.getenv("HOST",    "0.0.0.0"))
-    p.add_argument("--port",    type=int, default=int(os.getenv("PORT", 8001)))
+    p.add_argument("--port",    type=int, default=int(os.getenv("PORT", 8000)))
     p.add_argument(
         "--cache_ttl", type=int, default=int(os.getenv("CACHE_TTL", 86400)),
         help="Cache TTL in seconds (default: 86400 = 24 hours)",

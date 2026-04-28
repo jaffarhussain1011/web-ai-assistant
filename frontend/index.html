@@ -161,7 +161,7 @@
         <strong>Open this page or embed the widget anywhere</strong>
         <pre>&lt;script src="chat-widget.js"&gt;&lt;/script&gt;
 &lt;script&gt;
-  ChatWidget.init({ apiUrl: "http://localhost:8001/ask" });
+  ChatWidget.init({ apiUrl: "http://localhost:8000/ask" });
 &lt;/script&gt;</pre>
       </div>
     </div>
@@ -207,7 +207,7 @@
         <tr><th>Option</th><th>Default</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>apiUrl</code></td><td><code>http://localhost:8001/ask</code></td><td>FastAPI backend URL</td></tr>
+        <tr><td><code>apiUrl</code></td><td><code>http://localhost:8000/ask</code></td><td>FastAPI backend URL</td></tr>
         <tr><td><code>title</code></td><td><code>AI Assistant</code></td><td>Chat popup header text</td></tr>
         <tr><td><code>placeholder</code></td><td><em>Ask a question…</em></td><td>Input placeholder</td></tr>
         <tr><td><code>primaryColor</code></td><td><code>#4F46E5</code></td><td>Accent / brand colour (any CSS colour)</td></tr>
@@ -230,8 +230,8 @@
 <script src="chat-widget.js"></script>
 <script>
   ChatWidget.init({
-    apiUrl:       "http://localhost:8001/ask",
-    title:        "DB Assistant",
+    apiUrl:       "http://localhost:8000/ask",
+    title:        "AI Assistant",
     primaryColor: "#4F46E5",
     position:     "bottom-right",
   });
