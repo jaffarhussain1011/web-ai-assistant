@@ -53,6 +53,9 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
     datefmt="%H:%M:%S",
 )
+# Ensure sql_agent logs are always visible regardless of root level
+logging.getLogger("llm.sql_agent").setLevel(logging.INFO)
+logging.getLogger("db.direct_query").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
