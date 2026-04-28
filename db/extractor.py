@@ -166,6 +166,10 @@ class DBExtractor:
         """Return all table names in the database (no filtering)."""
         return self._get_table_names()
 
+    def list_tables_with_counts(self) -> list[tuple[str, int]]:
+        """Return (table_name, row_count) pairs for all tables."""
+        return [(name, self._get_row_count(name)) for name in self._get_table_names()]
+
     def extract(
         self,
         include: list[str] | None = None,
