@@ -241,15 +241,21 @@ class SQLAgent:
         Full pipeline: question → SQL → execute → natural-language answer.
         Falls back to schema-only answer if SQL generation fails.
         """
-        t0 = time.perf_counter()
-        schema = self.executor.get_schema()
-
+        t0  = time.perf_counter()
         _sep = "─" * 60
+
+        # ── Select only relevant tables to stay within LLM context limits ──
+        schema, matched_tables = self.executor.get_relevant_schema(question)
 
         # ── Step 1: Generate SQL ──────────────────────────────────────────
         logger.info("%s", _sep)
         logger.info("[STEP 1] Generating SQL for question: %s", question)
-        logger.info("[STEP 1] Sending schema (%d chars) + question to LLM ...", len(schema))
+        logger.info(
+            "[STEP 1] Schema: %d chars, %d relevant table(s): %s",
+            len(schema),
+            len(matched_tables),
+            ", ".join(matched_tables) if matched_tables else "full schema (fallback)",
+        )
 
         t1 = time.perf_counter()
         sql_prompt       = _SQL_USER_TMPL.format(schema=schema, question=question)
@@ -312,7 +318,7 @@ class SQLAgent:
             except RuntimeError as exc:
                 logger.warning("%s", _sep)
                 logger.warning("[STEP 2] SQL EXECUTION FAILED: %s", exc)
-                logger.warning("[STEP 2] Failed SQL was: %s", sql)
+                logger.warning("[STEP 2] Failed SQL was:  %s", sql)
                 logger.warning("[STEP 2] Falling back to schema-only answer.")
                 answer    = self._schema_only_answer(question, schema)
                 sql       = f"[FAILED] {sql}"
@@ -322,7 +328,7 @@ class SQLAgent:
         else:
             logger.info("%s", _sep)
             logger.info("[STEP 2] LLM returned NO_SQL — answering from schema only.")
-            answer    = self._schema_only_answer(question, schema)
+            answer    = self._schema_only_answer(question, schema)  # schema already filtered
             row_count = 0
 
         total_ms = (time.perf_counter() - t0) * 1000
@@ -338,8 +344,10 @@ class SQLAgent:
             row_count=row_count,
         )
 
-    def _schema_only_answer(self, question: str, schema: str) -> str:
+    def _schema_only_answer(self, question: str, schema: str | None = None) -> str:
         """Answer from schema alone when SQL cannot be used."""
-        logger.info("[SCHEMA-ONLY] Generating answer from schema (no SQL executed).")
+        if schema is None:
+            schema, _ = self.executor.get_relevant_schema(question)
+        logger.info("[SCHEMA-ONLY] Generating answer from schema (%d chars, no SQL executed).", len(schema))
         prompt = _SCHEMA_ONLY_USER_TMPL.format(schema=schema, question=question)
         return self._call_ollama(_SCHEMA_ONLY_SYSTEM, prompt)

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import mysql.connector
@@ -22,7 +22,8 @@ from mysql.connector import Error as MySQLError
 
 logger = logging.getLogger(__name__)
 
-MAX_ROWS = 200   # cap result sets sent to LLM
+MAX_ROWS        = 200    # cap result sets sent to LLM
+MAX_SCHEMA_CHARS = 4000  # max schema chars to send to the LLM in one prompt
 
 # Reject anything that isn't a SELECT (case-insensitive, strips leading comments)
 _SELECT_ONLY = re.compile(r"^\s*(--|/\*.*?\*/\s*)*\s*SELECT\b", re.IGNORECASE | re.DOTALL)
@@ -60,6 +61,8 @@ class DirectQueryExecutor:
         self.port     = port
         self._conn: Any = None
         self._schema_cache: str | None = None
+        # Structured cache: {table_name: "TABLE t (n rows): col1, col2, ..."}
+        self._table_lines: dict[str, str] = {}
 
     # ── Connection ────────────────────────────────────────────────────────
 
@@ -157,11 +160,77 @@ class DirectQueryExecutor:
                 + ", ".join(col_parts)
             )
 
+        # Store per-table lines for selective retrieval
+        for line in lines[2:]:   # skip the two header lines
+            tname_match = re.match(r"\s+TABLE\s+(.+?)\s+\(", line)
+            if tname_match:
+                self._table_lines[tname_match.group(1)] = line.strip()
+
         self._schema_cache = "\n".join(lines)
         return self._schema_cache
 
+    def get_relevant_schema(self, question: str) -> tuple[str, list[str]]:
+        """
+        Return a schema string containing ONLY the tables relevant to the question.
+
+        Strategy (in order of priority):
+          1. Exact table name match in question text
+          2. Any question word (3+ chars) found in table name or column names
+          3. If nothing matches, return the full schema (truncated to MAX_SCHEMA_CHARS)
+
+        Returns:
+            (schema_string, matched_table_names)
+        """
+        # Ensure schema is loaded
+        if not self._table_lines:
+            self.get_schema()
+
+        # Tokenise question into meaningful words (3+ chars, lowercase)
+        stop_words = {"the", "are", "have", "has", "does", "did", "was", "were",
+                      "for", "with", "what", "which", "who", "how", "many",
+                      "any", "all", "get", "show", "list", "find", "there"}
+        words = [
+            w.lower().strip("?.,!\"'")
+            for w in re.split(r"[\s_\-]+", question)
+            if len(w.strip("?.,!\"'")) >= 3
+            and w.lower().strip("?.,!\"'") not in stop_words
+        ]
+
+        matched: dict[str, str] = {}   # table_name → schema line
+
+        for tname, line in self._table_lines.items():
+            tname_lower = tname.lower()
+            line_lower  = line.lower()
+            for word in words:
+                if word in tname_lower or word in line_lower:
+                    matched[tname] = line
+                    break
+
+        if matched:
+            header = f"Database: {self.database}  (showing {len(matched)} of {len(self._table_lines)} relevant tables)\n"
+            schema = header + "\n".join(matched.values())
+            logger.info(
+                "Relevant schema: %d/%d tables matched for question %r  [%s]",
+                len(matched), len(self._table_lines), question[:60],
+                ", ".join(matched.keys()),
+            )
+        else:
+            # No keyword match — fall back to full schema, hard-truncated
+            full = self.get_schema()
+            schema = full[:MAX_SCHEMA_CHARS]
+            if len(full) > MAX_SCHEMA_CHARS:
+                schema += f"\n... [schema truncated at {MAX_SCHEMA_CHARS} chars — {len(self._table_lines)} tables total]"
+            logger.warning(
+                "No relevant tables found for question %r — sending truncated full schema (%d chars)",
+                question[:60], len(schema),
+            )
+            matched = {}
+
+        return schema, list(matched.keys())
+
     def invalidate_schema_cache(self) -> None:
         self._schema_cache = None
+        self._table_lines  = {}
 
     # ── Query execution ───────────────────────────────────────────────────
 
