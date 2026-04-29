@@ -1,0 +1,8 @@
+{
+  "preset": "purple",
+  "primaryColor": "#7c3aed",
+  "title": "AI Assistant",
+  "placeholder": "Ask a question\u2026",
+  "welcomeMessage": "\ud83d\udc4b Hello! How can I help you today?",
+  "position": "bottom-right"
+}

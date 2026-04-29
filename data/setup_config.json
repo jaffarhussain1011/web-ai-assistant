@@ -5,11 +5,12 @@
   "user": "root",
   "database": "db",
   "included_tables": [
+    "activities",
     "company_profiles",
     "plans",
     "teams"
   ],
-  "last_trained": "2026-04-28T13:04:46.702202",
-  "chunks": 442,
-  "total_tables": 3
+  "last_trained": "2026-04-29T11:10:03.160293",
+  "chunks": 511,
+  "total_tables": 4
 }
