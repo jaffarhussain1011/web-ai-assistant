@@ -106,9 +106,10 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Local AI Knowledge Base",
+        title="Live Support with AI",
         description=(
-            "Ask natural-language questions about your database. "
+            "AI-powered live support — ask questions in plain English "
+            "and get instant answers from your data. "
             "Powered by sentence-transformers + FAISS + local Ollama. "
             "Configure via /static/admin.html."
         ),

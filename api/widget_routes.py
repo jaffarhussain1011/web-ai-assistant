@@ -25,9 +25,9 @@ _CONFIG_PATH = Path(__file__).parent.parent / "data" / "widget_config.json"
 DEFAULTS: dict = {
     "preset":         "default",
     "primaryColor":   "#4F46E5",
-    "title":          "AI Assistant",
+    "title":          "Live Support",
     "placeholder":    "Ask a question…",
-    "welcomeMessage": "👋 Hello! How can I help you today?",
+    "welcomeMessage": "👋 Hi! I'm your support assistant. What can I help you with?",
     "position":       "bottom-right",
 }
 

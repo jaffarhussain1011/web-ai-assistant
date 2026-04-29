@@ -18,12 +18,12 @@
   /* ── Default configuration ─────────────────────────────────────────────── */
   const DEFAULTS = {
     apiUrl:         "http://localhost:8000/ask",
-    title:          "AI Assistant",
+    title:          "Live Support",
     placeholder:    "Ask a question…",
     primaryColor:   "#4F46E5",      // Indigo
     position:       "bottom-right", // bottom-right | bottom-left
     top_k:          5,              // context chunks to retrieve
-    welcomeMessage: "👋 Hello! How can I help you today?",
+    welcomeMessage: "👋 Hi! I'm your support assistant. What can I help you with?",
   };
 
   /* ── CSS injected into the page ─────────────────────────────────────────── */
@@ -286,7 +286,7 @@
             placeholder="${this._cfg.placeholder}"></textarea>
           <button id="cw-send-btn" title="Send">${ICON_SEND}</button>
         </div>
-        <div id="cw-powered">Powered by local AI · no data leaves your server</div>
+        <div id="cw-powered">Live Support · powered by AI</div>
       `;
       document.body.appendChild(this._popup);
 
