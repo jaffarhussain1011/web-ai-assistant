@@ -3,6 +3,8 @@
 Ask natural-language questions about your data in plain English.
 Trains once from your database, then answers fully offline — no cloud APIs, no data leaves your machine.
 
+![Demo](docs/demo.gif)
+
 ## Stack
 
 | Layer | Tech |
