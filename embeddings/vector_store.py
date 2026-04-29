@@ -68,7 +68,15 @@ def chunk_documents(docs: list[str]) -> list[str]:
 
 def _load_model(model_name: str = DEFAULT_MODEL) -> SentenceTransformer:
     logger.info("Loading embedding model: %s", model_name)
-    return SentenceTransformer(model_name)
+    # Use the local cache without any HF Hub network checks if the model is
+    # already downloaded.  Falls back to a one-time download if not cached.
+    try:
+        model = SentenceTransformer(model_name, local_files_only=True)
+        logger.info("Embedding model loaded from local cache (offline)")
+        return model
+    except Exception:
+        logger.info("Model not in local cache — downloading from HuggingFace (one-time only)…")
+        return SentenceTransformer(model_name)
 
 
 def embed_texts(texts: list[str], model: SentenceTransformer, batch_size: int = 64) -> np.ndarray:

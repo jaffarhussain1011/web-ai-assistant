@@ -78,6 +78,13 @@ async def lifespan(app: FastAPI):
         )
     app.state.vector_store = vs
 
+    # Pre-load the embedding model now so the first /ask request is instant
+    # and HF Hub checks happen at startup rather than during a user query.
+    try:
+        _ = vs.model
+    except Exception as exc:
+        logger.warning("Could not pre-load embedding model: %s", exc)
+
     # ── LLM ───────────────────────────────────────────────────────────────
     llm_config = LLMConfig(
         model=os.getenv("OLLAMA_MODEL", "llama3.2"),
