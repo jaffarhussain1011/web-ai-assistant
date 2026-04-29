@@ -2,7 +2,7 @@
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
 
-# MySQL
+# Database providers (MySQL; add psycopg2 etc. for other providers)
 mysql-connector-python>=8.3.0
 
 # Embeddings
