@@ -14,6 +14,8 @@ Pipeline for POST /ask:
 from __future__ import annotations
 
 import logging
+import random
+import re
 import time
 
 from fastapi import APIRouter, HTTPException, Request
@@ -21,6 +23,78 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# ── Small-talk / greeting handling ────────────────────────────────────────────
+
+_SMALLTALK: list[tuple[re.Pattern, list[str]]] = [
+    (
+        re.compile(r"^\s*(hi+|hello+|hey+|howdy|hiya|yo+|sup)\W*$", re.I),
+        [
+            "Hi there! How can I help you today?",
+            "Hello! What would you like to know?",
+            "Hey! Go ahead and ask me anything about the data.",
+        ],
+    ),
+    (
+        re.compile(r"\bgood\s*(morning|afternoon|evening|day)\b", re.I),
+        [
+            "Good day! What can I help you with?",
+            "Hi! Hope you're having a great day. What would you like to know?",
+        ],
+    ),
+    (
+        re.compile(r"\bhow are (you|u)\b|\bhow('?re| are) (you|u) doing\b|\bhow.*going\b", re.I),
+        [
+            "I'm doing great, thanks for asking! Ready to answer your questions.",
+            "All good here — what can I help you with?",
+        ],
+    ),
+    (
+        re.compile(r"\bwhat'?s up\b", re.I),
+        [
+            "Not much! Just here to help. What do you need?",
+            "Hey! Ask me anything about the data.",
+        ],
+    ),
+    (
+        re.compile(r"\b(thank(s| you)|thx|cheers)\b", re.I),
+        [
+            "You're welcome! Let me know if there's anything else.",
+            "Happy to help! Feel free to ask more questions.",
+            "Anytime!",
+        ],
+    ),
+    (
+        re.compile(r"\b(bye+|goodbye|see (ya|you)|cya|take care)\b", re.I),
+        [
+            "Goodbye! Come back if you have more questions.",
+            "See you later! Have a great day.",
+        ],
+    ),
+    (
+        re.compile(r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b", re.I),
+        [
+            "I'm your AI assistant, here to help you explore and understand your data. "
+            "Try asking something like 'How many users are there?' or 'Tell me about the products table.'",
+        ],
+    ),
+    (
+        re.compile(r"^\s*help\s*\??\s*$", re.I),
+        [
+            "Sure! Ask me anything about your database — for example: "
+            "'How many active users are there?' or 'What products do we have?'",
+        ],
+    ),
+]
+
+
+def _smalltalk_reply(text: str) -> str | None:
+    """Return a canned reply if *text* is small-talk, else None."""
+    for pattern, replies in _SMALLTALK:
+        if pattern.search(text):
+            return random.choice(replies)
+    return None
 
 
 # ── Request / Response schemas ────────────────────────────────────────────────
@@ -65,6 +139,11 @@ async def ask(body: AskRequest, request: Request) -> AskResponse:
     """
     vs  = request.app.state.vector_store
     llm = request.app.state.llm
+
+    # Short-circuit for greetings / small-talk — no vector search or LLM needed
+    reply = _smalltalk_reply(body.question)
+    if reply:
+        return AskResponse(answer=reply, sources_count=0, latency_ms=0.0)
 
     if not vs.is_loaded:
         raise HTTPException(
