@@ -17,12 +17,13 @@
 
   /* ── Default configuration ─────────────────────────────────────────────── */
   const DEFAULTS = {
-    apiUrl:       "http://localhost:8000/ask",
-    title:        "AI Assistant",
-    placeholder:  "Ask a question …",
-    primaryColor: "#4F46E5",      // Indigo
-    position:     "bottom-right", // bottom-right | bottom-left
-    top_k:        5,              // context chunks to retrieve
+    apiUrl:         "http://localhost:8000/ask",
+    title:          "AI Assistant",
+    placeholder:    "Ask a question…",
+    primaryColor:   "#4F46E5",      // Indigo
+    position:       "bottom-right", // bottom-right | bottom-left
+    top_k:          5,              // context chunks to retrieve
+    welcomeMessage: "👋 Hello! How can I help you today?",
   };
 
   /* ── CSS injected into the page ─────────────────────────────────────────── */
@@ -213,11 +214,37 @@
 
     /* ── init ─────────────────────────────────────────────────────────── */
     init(userCfg = {}) {
+      // Merge order: DEFAULTS < server config < userCfg
+      // Server config is fetched async; widget renders immediately with
+      // DEFAULTS + userCfg, then updates colour/title if server responds.
       this._cfg = Object.assign({}, DEFAULTS, userCfg);
       this._injectCSS();
       this._buildDOM();
       this._bindEvents();
-      this._addBotMessage("👋 Hello! Ask me anything.");
+      this._addBotMessage(this._cfg.welcomeMessage);
+      this._fetchServerConfig(userCfg);
+    },
+
+    /* ── Fetch server widget config ───────────────────────────────────── */
+    _fetchServerConfig(userCfg) {
+      try {
+        const base = new URL(this._cfg.apiUrl).origin;
+        fetch(`${base}/widget/config`)
+          .then(r => r.ok ? r.json() : null)
+          .then(serverCfg => {
+            if (!serverCfg) return;
+            // Re-merge: DEFAULTS < server < userCfg (userCfg always wins)
+            const merged = Object.assign({}, DEFAULTS, serverCfg, userCfg);
+            this._cfg = merged;
+            // Apply dynamic updates to already-rendered DOM
+            document.documentElement.style.setProperty("--cw-primary", merged.primaryColor);
+            const header = this._popup.querySelector("#cw-header span");
+            if (header) header.textContent = merged.title;
+            const inp = this._popup.querySelector("#cw-input");
+            if (inp) inp.placeholder = merged.placeholder;
+          })
+          .catch(() => { /* server unreachable — keep local defaults */ });
+      } catch (_) { /* invalid apiUrl — skip */ }
     },
 
     /* ── DOM construction ─────────────────────────────────────────────── */

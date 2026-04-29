@@ -42,6 +42,7 @@ from embeddings.vector_store import VectorStore
 from llm.model               import LocalLLM, LLMConfig
 from api.routes              import router as qa_router
 from api.setup_routes        import router as setup_router
+from api.widget_routes       import router as widget_router
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "info").upper(),
@@ -121,6 +122,7 @@ def create_app() -> FastAPI:
 
     app.include_router(qa_router)
     app.include_router(setup_router)
+    app.include_router(widget_router)
 
     return app
 

@@ -187,6 +187,72 @@
     .muted   { color: var(--muted); }
     .sm      { font-size: 13px; }
     .hidden  { display: none !important; }
+
+    /* ── Widget tab ── */
+    .preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .preset-card {
+      border: 2px solid var(--border); border-radius: 8px; padding: 10px 6px;
+      cursor: pointer; text-align: center; transition: border-color .15s, transform .1s;
+    }
+    .preset-card:hover { transform: translateY(-1px); border-color: var(--muted); }
+    .preset-card.selected { border-color: var(--primary); }
+    .preset-swatch { width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 6px; }
+    .preset-name { font-size: 11px; color: var(--text-sm); }
+    .pos-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .pos-toggle button {
+      flex: 1; padding: 8px 12px; border: none; background: var(--card);
+      cursor: pointer; font-size: 13px; color: var(--text-sm); transition: background .15s, color .15s;
+    }
+    .pos-toggle button.active { background: var(--primary); color: #fff; }
+    .widget-preview {
+      background: var(--bg); border-radius: 8px; padding: 12px;
+      min-height: 340px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    }
+    .wp-popup {
+      width: 100%; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15); display: flex; flex-direction: column;
+      background: #fff; border: 1px solid var(--border);
+    }
+    .wp-header {
+      padding: 10px 14px; color: #fff; font-size: 13px; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .wp-avatar {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(255,255,255,.25); display: flex;
+      align-items: center; justify-content: center; font-size: 13px;
+    }
+    .wp-messages { padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #f9fafb; }
+    .wp-bot-msg, .wp-user-msg {
+      font-size: 12px; line-height: 1.4; padding: 8px 10px;
+      border-radius: 10px; max-width: 90%;
+    }
+    .wp-bot-msg  { background: #fff; border: 1px solid #e5e7eb; align-self: flex-start; color: #111; }
+    .wp-user-msg { color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
+    .wp-input-row {
+      display: flex; padding: 8px; gap: 6px;
+      border-top: 1px solid var(--border); background: #fff;
+    }
+    .wp-input {
+      flex: 1; font-size: 12px; color: var(--muted); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+    }
+    .wp-send-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 12px; flex-shrink: 0;
+    }
+    .wp-launcher {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; box-shadow: 0 2px 8px rgba(0,0,0,.2); cursor: pointer;
+    }
+    .embed-area {
+      font-family: ui-monospace, monospace; font-size: 12px;
+      background: #0f172a; color: #94a3b8; border: none;
+      border-radius: 6px; padding: 12px; resize: none; width: 100%;
+    }
+    @media (max-width: 700px) { .widget-layout { grid-template-columns: 1fr !important; } }
   </style>
 </head>
 <body>
@@ -203,6 +269,7 @@
   <button onclick="switchTab('kb')">Knowledge Base</button>
   <button onclick="switchTab('tester')">Q&amp;A Tester</button>
   <button onclick="switchTab('chunks')">Chunks</button>
+  <button onclick="switchTab('widget')">Widget</button>
 </nav>
 
 <main>
@@ -362,6 +429,100 @@
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════
+       TAB 5 — Widget Customization
+  ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-widget">
+    <div class="widget-layout" style="display:grid; grid-template-columns:1fr 280px; gap:16px; align-items:start">
+
+      <!-- Settings column -->
+      <div>
+        <div class="card">
+          <div class="card-title">Color Preset</div>
+          <div class="preset-grid" id="preset-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Custom Color</div>
+          <div style="display:flex; align-items:center; gap:14px">
+            <input type="color" id="color-picker"
+              style="width:44px;height:36px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
+              oninput="onColorPicker()">
+            <div>
+              <label>Hex value</label>
+              <input type="text" id="color-hex" style="max-width:130px" placeholder="#4F46E5" oninput="onColorHex()">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Position</div>
+          <div class="pos-toggle">
+            <button id="pos-br" class="active" onclick="selPos('bottom-right')">Bottom Right</button>
+            <button id="pos-bl" onclick="selPos('bottom-left')">Bottom Left</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Text Content</div>
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <div><label>Widget Title</label>
+              <input type="text" id="w-title" placeholder="AI Assistant" oninput="updatePreview()"></div>
+            <div><label>Welcome Message</label>
+              <input type="text" id="w-welcome" placeholder="👋 Hello! How can I help you today?" oninput="updatePreview()"></div>
+            <div><label>Input Placeholder</label>
+              <input type="text" id="w-placeholder" placeholder="Ask a question…" oninput="updatePreview()"></div>
+          </div>
+        </div>
+
+        <div class="flex gap-8 mt-12" style="margin-bottom:16px">
+          <button class="btn btn-primary" onclick="saveWidgetConfig()">💾 Save Configuration</button>
+        </div>
+        <div class="alert alert-success" id="widget-ok"></div>
+        <div class="alert alert-error"   id="widget-err"></div>
+
+        <div class="card mt-20">
+          <div class="card-title">Embed Code</div>
+          <p class="sm muted" style="margin-bottom:10px">Copy this snippet into any HTML page to embed the chat widget.</p>
+          <textarea class="embed-area" id="embed-code" rows="7" readonly></textarea>
+          <div class="flex gap-8" style="margin-top:8px; align-items:center">
+            <button class="btn btn-outline btn-sm" onclick="copyEmbed()">📋 Copy</button>
+            <span id="copy-ok" style="display:none; font-size:13px; color:var(--success)">✓ Copied!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live preview column -->
+      <div style="position:sticky; top:72px">
+        <div class="card">
+          <div class="card-title">Live Preview</div>
+          <div class="widget-preview">
+            <div class="wp-popup">
+              <div class="wp-header" id="wp-header">
+                <div style="display:flex; align-items:center; gap:8px">
+                  <div class="wp-avatar">🤖</div>
+                  <span id="wp-title">AI Assistant</span>
+                </div>
+                <span style="opacity:.7">✕</span>
+              </div>
+              <div class="wp-messages">
+                <div class="wp-bot-msg" id="wp-welcome">👋 Hello! How can I help you today?</div>
+                <div class="wp-user-msg" id="wp-user-bubble">What's the total revenue?</div>
+                <div class="wp-bot-msg">Total revenue this month is $125,430.</div>
+              </div>
+              <div class="wp-input-row">
+                <div class="wp-input" id="wp-input-ph">Ask a question…</div>
+                <div class="wp-send-btn" id="wp-send">➤</div>
+              </div>
+            </div>
+            <div class="wp-launcher" id="wp-launcher">💬</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -391,13 +552,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(name) {
-  const order = ['setup','kb','tester','chunks'];
+  const order = ['setup','kb','tester','chunks','widget'];
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   document.querySelectorAll('nav button')[order.indexOf(name)].classList.add('active');
   if (name === 'kb')     loadKBTab();
   if (name === 'chunks') { chunksPage = 0; loadChunks(); }
+  if (name === 'widget') loadWidgetTab();
 }
 
 // ── Health ────────────────────────────────────────────────────────────────────
@@ -704,6 +866,164 @@ function nextPage()  { chunksPage++; loadChunks(); }
 function showAlert(el, msg) { el.classList.add('show'); el.textContent = msg; }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Widget Customization ──────────────────────────────────────────────────────
+const WIDGET_PRESETS = [
+  { name: 'Default', color: '#4F46E5' },
+  { name: 'Ocean',   color: '#0284c7' },
+  { name: 'Forest',  color: '#16a34a' },
+  { name: 'Sunset',  color: '#ea580c' },
+  { name: 'Purple',  color: '#7c3aed' },
+  { name: 'Rose',    color: '#e11d48' },
+  { name: 'Dark',    color: '#1e293b' },
+  { name: 'Minimal', color: '#374151' },
+];
+
+let wCfg = {};
+
+async function loadWidgetTab() {
+  try {
+    const r = await fetch(`${API}/widget/config`);
+    if (r.ok) wCfg = await r.json();
+  } catch { wCfg = {}; }
+
+  const grid = document.getElementById('preset-grid');
+  const activePre = (wCfg.preset || 'default');
+  grid.innerHTML = WIDGET_PRESETS.map(p => `
+    <div class="preset-card ${activePre === p.name.toLowerCase() ? 'selected' : ''}"
+         onclick="selPreset('${p.name.toLowerCase()}','${p.color}')">
+      <div class="preset-swatch" style="background:${p.color}"></div>
+      <div class="preset-name">${p.name}</div>
+    </div>`).join('');
+
+  const pc = wCfg.primaryColor || '#4F46E5';
+  document.getElementById('color-picker').value  = pc;
+  document.getElementById('color-hex').value     = pc;
+  document.getElementById('w-title').value        = wCfg.title          || '';
+  document.getElementById('w-welcome').value      = wCfg.welcomeMessage || '';
+  document.getElementById('w-placeholder').value  = wCfg.placeholder    || '';
+  const pos = wCfg.position || 'bottom-right';
+  document.getElementById('pos-br').classList.toggle('active', pos === 'bottom-right');
+  document.getElementById('pos-bl').classList.toggle('active', pos === 'bottom-left');
+
+  updatePreview();
+  updateEmbedCode();
+}
+
+function selPreset(name, color) {
+  wCfg.preset = name;
+  wCfg.primaryColor = color;
+  document.getElementById('color-picker').value = color;
+  document.getElementById('color-hex').value    = color;
+  document.querySelectorAll('.preset-card').forEach(c => {
+    c.classList.toggle('selected',
+      c.querySelector('.preset-name').textContent.toLowerCase() === name);
+  });
+  updatePreview();
+  updateEmbedCode();
+}
+
+function onColorPicker() {
+  const v = document.getElementById('color-picker').value;
+  document.getElementById('color-hex').value = v;
+  wCfg.primaryColor = v;
+  wCfg.preset = 'custom';
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+  updatePreview();
+  updateEmbedCode();
+}
+
+function onColorHex() {
+  const v = document.getElementById('color-hex').value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+    document.getElementById('color-picker').value = v;
+    wCfg.primaryColor = v;
+    wCfg.preset = 'custom';
+    document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+    updatePreview();
+    updateEmbedCode();
+  }
+}
+
+function selPos(pos) {
+  wCfg.position = pos;
+  document.getElementById('pos-br').classList.toggle('active', pos === 'bottom-right');
+  document.getElementById('pos-bl').classList.toggle('active', pos === 'bottom-left');
+  updateEmbedCode();
+}
+
+function updatePreview() {
+  const color   = document.getElementById('color-picker').value || '#4F46E5';
+  const title   = document.getElementById('w-title').value       || 'AI Assistant';
+  const welcome = document.getElementById('w-welcome').value     || '👋 Hello! How can I help you today?';
+  const ph      = document.getElementById('w-placeholder').value || 'Ask a question…';
+
+  document.getElementById('wp-header').style.background      = color;
+  document.getElementById('wp-send').style.background        = color;
+  document.getElementById('wp-launcher').style.background    = color;
+  document.getElementById('wp-user-bubble').style.background = color;
+  document.getElementById('wp-title').textContent   = title;
+  document.getElementById('wp-welcome').textContent = welcome;
+  document.getElementById('wp-input-ph').textContent = ph;
+}
+
+function updateEmbedCode() {
+  const color   = document.getElementById('color-picker').value || '#4F46E5';
+  const title   = document.getElementById('w-title').value       || 'AI Assistant';
+  const welcome = document.getElementById('w-welcome').value     || '👋 Hello! How can I help you today?';
+  const ph      = document.getElementById('w-placeholder').value || 'Ask a question…';
+  const pos     = wCfg.position || 'bottom-right';
+
+  document.getElementById('embed-code').value =
+`<script src="${API}/static/chat-widget.js"><\/script>
+<script>
+  ChatWidget.init({
+    apiUrl:         "${API}/ask",
+    title:          "${title}",
+    welcomeMessage: "${welcome}",
+    placeholder:    "${ph}",
+    primaryColor:   "${color}",
+    position:       "${pos}",
+  });
+<\/script>`;
+}
+
+async function saveWidgetConfig() {
+  const okEl  = document.getElementById('widget-ok');
+  const errEl = document.getElementById('widget-err');
+  okEl.className  = 'alert alert-success';
+  errEl.className = 'alert alert-error';
+
+  const body = {
+    preset:         wCfg.preset        || 'custom',
+    primaryColor:   document.getElementById('color-picker').value,
+    title:          document.getElementById('w-title').value       || 'AI Assistant',
+    welcomeMessage: document.getElementById('w-welcome').value     || '👋 Hello! How can I help you today?',
+    placeholder:    document.getElementById('w-placeholder').value || 'Ask a question…',
+    position:       wCfg.position || 'bottom-right',
+  };
+
+  try {
+    const r = await fetch(`${API}/widget/config`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Save failed');
+    wCfg = d.config;
+    showAlert(okEl, '✓ Widget configuration saved. Live widgets will pick it up on next page load.');
+  } catch (e) {
+    showAlert(errEl, '✗ ' + e.message);
+  }
+}
+
+function copyEmbed() {
+  const txt = document.getElementById('embed-code').value;
+  navigator.clipboard.writeText(txt).then(() => {
+    const el = document.getElementById('copy-ok');
+    el.style.display = 'inline';
+    setTimeout(() => { el.style.display = 'none'; }, 2000);
+  });
 }
 </script>
 </body>
